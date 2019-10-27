@@ -3,12 +3,74 @@
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
+
+// The RenderTexture passed from RayTracingMaster in `Render(RenderTexture destination)`
 RWTexture2D<float4> Result;
+// The parameters passed from RayTracingMaster in `SetShaderParameters()`
+float4x4 _CameraToWorld;
+float4x4 _CameraInverseProjection;
+// The skybox texture passed from RayTracingMaster in `SetShaderParameters()`
+Texture2D<float4> _SkyboxTexture;
+
+// Constants
+static const float PI = 3.14159265f;
+
+// Sampler for skybox texture
+SamplerState sampler_SkyboxTexture;
+
+// Data structure reprensenting a Ray
+struct Ray
+{
+    float3 origin;
+    float3 direction;
+};
+
+// Function to construct a `Ray`
+Ray CreateRay(float3 origin, float3 direction)
+{
+    Ray ray;
+    ray.origin = origin;
+    ray.direction = direction;
+    return ray;
+}
+
+// Create a Ray from the camera going in the direction `uv`
+Ray CreateCameraRay(float2 uv)
+{
+    // Transform the camera origin to world space
+    float3 origin = mul(_CameraToWorld, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
+
+    // Invert the perspective projection of the view-space position
+    float3 direction = mul(_CameraInverseProjection, float4(uv, 0.0f, 1.0f)).xyz;
+    // Transform the direction from camera to world space and normalize
+    direction = mul(_CameraToWorld, float4(direction, 0.0f)).xyz;
+    direction = normalize(direction);
+
+    return CreateRay(origin, direction);
+}
+
+// Converts direction from carthesian coords to spherical coords
+float2 CarthesianToSpherical(float3 direction)
+{
+    float phi = atan2(direction.x, -direction.z) / -PI * 0.5f;
+    float theta = acos(direction.y) / -PI;
+    return float2(phi, theta);
+}
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    // TODO: insert actual code here!
+    // Get the dimensions of the RenderTexture
+    uint width, height;
+    Result.GetDimensions(width, height);
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+    // Transform pixel to [-1,1] range
+    float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
+
+    // Get a ray for the UVs
+    Ray ray = CreateCameraRay(uv);
+
+    // Sample Skybox and write it
+    int lod = 0;
+    Result[id.xy] = _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, CarthesianToSpherical(ray.direction), lod);
 }

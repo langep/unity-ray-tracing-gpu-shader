@@ -1,17 +1,39 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
+// RayTracing controller to be attached to the Main Camera
+[RequireComponent(typeof(Camera))]
 public class RayTracingMaster : MonoBehaviour
 {
 
     [SerializeField] private ComputeShader _shader;
+    [SerializeField] private Texture _skybox_texture;
+
+
+    private Camera _camera;
     private RenderTexture _target;
+
+    // Automatically called by Unity when the object is initialized
+    private void Awake()
+    {
+        _camera = GetComponent<Camera>();
+    }
 
     // Automatically called by Unity when Camera finished rendering
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
+        SetShaderParameters();
         Render(destination);
+    }
+
+    // Set parameters on the shader.
+    private void SetShaderParameters()
+    {
+        // Camera parameters
+        _shader.SetMatrix("_CameraToWorld", _camera.cameraToWorldMatrix);
+        _shader.SetMatrix("_CameraInverseProjection", _camera.projectionMatrix.inverse);
+
+        // Skybox texture
+        _shader.SetTexture(0, "_SkyboxTexture", _skybox_texture);
     }
 
     private void Render(RenderTexture destination)
