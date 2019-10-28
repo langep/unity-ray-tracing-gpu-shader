@@ -11,6 +11,8 @@ float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 // The skybox texture passed from RayTracingMaster in `SetShaderParameters()`
 Texture2D<float4> _SkyboxTexture;
+// The ground planes Y coordinate passed from RayTracingMaster in `SetShaderParameters()`
+float _GroundPlaneY;
 
 // Constants
 static const float PI = 3.14159265f;
@@ -49,12 +51,96 @@ Ray CreateCameraRay(float2 uv)
     return CreateRay(origin, direction);
 }
 
+// Data structure to represent a RayHit
+struct RayHit
+{
+    float3 position;
+    float distance;
+    float3 normal;
+};
+
+// Function to create default ray hit (no hit)
+RayHit CreateRayHit()
+{
+    RayHit hit;
+    hit.position = float3(0.0f, 0.0f, 0.0f);
+    hit.distance = 1.#INF;
+    hit.normal = float3(0.0f, 0.0f, 0.0f);
+    return hit;
+}
+
+// Compute intersection of ray with ground plane at height y.
+// Updates bestHit if ray direction is positive and the found hit
+// is at a shorter distance than the previous best hit.
+void IntersectGroundPlane(Ray ray, inout RayHit bestHit)
+{
+    // Calculate distance along the ray where the ground plane is intersected
+    float t = -(ray.origin.y - _GroundPlaneY) / ray.direction.y;
+
+    // Only update if direction is positive and closer than previous hit
+    if (t > 0 && t < bestHit.distance)
+    {
+        bestHit.distance = t;
+        bestHit.position = ray.origin + t * ray.direction;
+        bestHit.normal = float3(0.0f, 1.0f, 0.0f);
+    }
+}
+
+// Compute intersection of ray with a sphere located at x, y, z and radius w.
+// `sphere` is floatt4(x, y, z, w)
+// Updates bestHit if ray direction is positive and the found hit
+// is at a shorter distance than the previous best hit.
+void IntersectSphere(Ray ray, inout RayHit bestHit, float4 sphere)
+{
+    // Calculate distance along the ray where the sphere is intersected
+    float3 d = ray.origin - sphere.xyz;
+    float p1 = -dot(ray.direction, d);
+    float p2sqr = p1 * p1 - dot(d, d) + sphere.w * sphere.w;
+    if (p2sqr < 0)
+        return;
+    float p2 = sqrt(p2sqr);
+    float t = p1 - p2 > 0 ? p1 - p2 : p1 + p2;
+    if (t > 0 && t < bestHit.distance)
+    {
+        bestHit.distance = t;
+        bestHit.position = ray.origin + t * ray.direction;
+        bestHit.normal = normalize(bestHit.position - sphere.xyz);
+    }
+}
+
+// Trace a ray to find the closest intersection
+RayHit Trace(Ray ray)
+{
+    RayHit bestHit = CreateRayHit();
+    IntersectGroundPlane(ray, bestHit);
+    IntersectSphere(ray, bestHit, float4(0, 3.0f, 0, 1.0f));
+    return bestHit;
+}
+
 // Converts direction from carthesian coords to spherical coords
 float2 CarthesianToSpherical(float3 direction)
 {
     float phi = atan2(direction.x, -direction.z) / -PI * 0.5f;
     float theta = acos(direction.y) / -PI;
     return float2(phi, theta);
+}
+
+// Shade the pixel originating the ray based with
+// geometry was hit: the normal of the geometry at the hit location
+// otherwise: sample from skybox
+float3 Shade(inout Ray ray, RayHit hit)
+{
+    if (hit.distance < 1.#INF)
+    {
+        // Return the normal
+        return hit.normal * 0.5f + 0.5f;
+    }
+    else
+    {
+        // Sample skybox
+        int lod = 0;
+        return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, CarthesianToSpherical(ray.direction), lod);
+    }
 }
 
 [numthreads(8,8,1)]
@@ -70,7 +156,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // Get a ray for the UVs
     Ray ray = CreateCameraRay(uv);
 
-    // Sample Skybox and write it
-    int lod = 0;
-    Result[id.xy] = _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, CarthesianToSpherical(ray.direction), lod);
+    // Trace and shade
+    RayHit hit = Trace(ray);
+    float3 result = Shade(ray, hit);
+    Result[id.xy] = float4(result, 1);
 }

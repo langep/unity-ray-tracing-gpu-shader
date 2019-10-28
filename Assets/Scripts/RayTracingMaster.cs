@@ -34,6 +34,9 @@ public class RayTracingMaster : MonoBehaviour
 
         // Skybox texture
         _shader.SetTexture(0, "_SkyboxTexture", _skybox_texture);
+
+        // Set ground plane location
+        _shader.SetFloat("_GroundPlaneY", 0.0f);
     }
 
     private void Render(RenderTexture destination)

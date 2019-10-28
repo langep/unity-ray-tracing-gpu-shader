@@ -14,6 +14,7 @@ Each stage of the project will be available as individual tag.
 | -------------------------- | -------------------------------------------------------------- |
 | 01-setup-raytracing-master | Create the controller script which invokes the compute shader. |
 | 02-sample-from-texture     | Create rays and sample from Skybox texture.                    |
+| 03-trace-ground-and-sphere | Trace rays and intersect with ground plane and sphere.         |
 
 ## 01-setup-raytracing-master
 
@@ -26,3 +27,9 @@ This is the output after setting up the `RayTracingMaster.cs` script to invoke U
 The output after creating rays and sampling from a Skybox texture:
 
 ![Skybox Texture](./Documentation/Visualization/02-sample-from-texture.PNG "Cape Hill Skybox")
+
+## 03-trace-ground-and-sphere
+
+The output after adding a ground plane and sphere. Nasty aliasing!
+
+![Sphere with Aliasing](./Documentation/Visualization/03-trace-ground-and-sphere.PNG "Sphere with Aliasing")
