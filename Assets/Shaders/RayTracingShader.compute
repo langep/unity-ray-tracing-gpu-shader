@@ -15,6 +15,8 @@ Texture2D<float4> _SkyboxTexture;
 float _GroundPlaneY;
 // Pixel offset for progressive sampling passed from RayTracingMaster in `SetShaderParameters()`
 float2 _PixelOffset;
+// The maximum number of reflections
+int _Reflections;
 
 // Constants
 static const float PI = 3.14159265f;
@@ -27,6 +29,7 @@ struct Ray
 {
     float3 origin;
     float3 direction;
+    float3 energy;
 };
 
 // Function to construct a `Ray`
@@ -35,6 +38,7 @@ Ray CreateRay(float3 origin, float3 direction)
     Ray ray;
     ray.origin = origin;
     ray.direction = direction;
+    ray.energy = float3(1.0f, 1.0f, 1.0f);
     return ray;
 }
 
@@ -115,7 +119,10 @@ RayHit Trace(Ray ray)
 {
     RayHit bestHit = CreateRayHit();
     IntersectGroundPlane(ray, bestHit);
-    IntersectSphere(ray, bestHit, float4(0, 3.0f, 0, 1.0f));
+    IntersectSphere(ray, bestHit, float4(0, 1.0f, 0, 1.0f));
+    IntersectSphere(ray, bestHit, float4(3, 1.0f, 0, 1.0f));
+    IntersectSphere(ray, bestHit, float4(0, 1.0f, 3, 1.0f));
+    IntersectSphere(ray, bestHit, float4(3, 1.0f, 3, 1.0f));
     return bestHit;
 }
 
@@ -128,20 +135,32 @@ float2 CarthesianToSpherical(float3 direction)
 }
 
 // Shade the pixel originating the ray based with
-// geometry was hit: the normal of the geometry at the hit location
-// otherwise: sample from skybox
+//  geometry was hit: the normal of the geometry at the hit location
+//  otherwise: sample from skybox
+// Also updates the ray with the correct relection direction and
+// decreased energy.
 float3 Shade(inout Ray ray, RayHit hit)
 {
     if (hit.distance < 1.#INF)
     {
-        // Return the normal
-        return hit.normal * 0.5f + 0.5f;
+        float3 specular = float3(0.6f, 0.6f, 0.6f);
+
+        // Reflect the ray and multiply energy with specular reflection
+        ray.origin = hit.position + hit.normal * 0.001f;
+        ray.direction = reflect(ray.direction, hit.normal);
+        ray.energy *= specular;
+
+        // Return nothing
+        return float3(0.0f, 0.0f, 0.0f);
     }
     else
     {
-        // Sample skybox
+        // We hit the sky which reflects nothing
+        ray.energy = 0.0f;
+
         int lod = 0;
-        return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, CarthesianToSpherical(ray.direction), lod);
+        float intensity = 1.4f;
+        return intensity * _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, CarthesianToSpherical(ray.direction), lod);
     }
 }
 
@@ -160,7 +179,14 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     Ray ray = CreateCameraRay(uv);
 
     // Trace and shade
-    RayHit hit = Trace(ray);
-    float3 result = Shade(ray, hit);
+    float3 result = float3(0, 0, 0);
+    for (int i = 0; i < _Reflections + 1; i++)
+    {
+        RayHit hit = Trace(ray);
+        result += ray.energy * Shade(ray, hit);
+        if (!any(ray.energy))
+            break;
+    }
+
     Result[id.xy] = float4(result, 1);
 }

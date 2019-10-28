@@ -16,6 +16,7 @@ Each stage of the project will be available as individual tag.
 | 02-sample-from-texture     | Create rays and sample from Skybox texture.                       |
 | 03-trace-ground-and-sphere | Trace rays and intersect with ground plane and sphere.            |
 | 04-progressive-sampling    | Progressive sampling to remove aliasing when camera doesn't move. |
+| 05-mirror-reflection       | Mirror-like reflection for metalic objects by bouncing rays.      |
 
 ## 01-setup-raytracing-master
 
@@ -40,3 +41,10 @@ The output after adding a ground plane and sphere. Nasty aliasing!
 After progressive sampling, the sphere looks much better.
 
 ![Sphere with Progressive Sampling](./Documentation/Visualization/04-progressive-sampling.PNG "Sphere without aliasing effects")
+
+## 05-mirror-reflection
+
+After adding bouncing rays for mirror-like reflections for metalic materials, we can see relections in
+reflections in relections in ...
+
+![MirrorReflection](./Documentation/Visualization/05-mirror-reflection.PNG "Mirror-like relection")

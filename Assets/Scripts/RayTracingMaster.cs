@@ -7,6 +7,7 @@ public class RayTracingMaster : MonoBehaviour
 
     [SerializeField] private ComputeShader _shader;
     [SerializeField] private Texture _skybox_texture;
+    [Range(0, 9)] [SerializeField] private int _reflections;
 
 
     private Camera _camera;
@@ -32,6 +33,11 @@ public class RayTracingMaster : MonoBehaviour
         }
     }
 
+    private void OnValidate()
+    {
+        _currentSample = 0;
+    }
+
     // Automatically called by Unity when Camera finished rendering
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
@@ -54,6 +60,9 @@ public class RayTracingMaster : MonoBehaviour
 
         // Pixel offset for progressive sampling
         _shader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
+
+        // Number of reflections
+        _shader.SetInt("_Reflections", _reflections);
     }
 
     private void Render(RenderTexture destination)
