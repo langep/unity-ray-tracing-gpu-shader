@@ -13,6 +13,8 @@ float4x4 _CameraInverseProjection;
 Texture2D<float4> _SkyboxTexture;
 // The ground planes Y coordinate passed from RayTracingMaster in `SetShaderParameters()`
 float _GroundPlaneY;
+// Pixel offset for progressive sampling passed from RayTracingMaster in `SetShaderParameters()`
+float2 _PixelOffset;
 
 // Constants
 static const float PI = 3.14159265f;
@@ -150,8 +152,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     uint width, height;
     Result.GetDimensions(width, height);
 
-    // Transform pixel to [-1,1] range
-    float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
+    // Transform pixel to [-1,1] range and add random offset
+    // for progressive sampling
+    float2 uv = float2((id.xy + _PixelOffset) / float2(width, height) * 2.0f - 1.0f);
 
     // Get a ray for the UVs
     Ray ray = CreateCameraRay(uv);

@@ -10,11 +10,12 @@ David Kuri on the topic.
 
 Each stage of the project will be available as individual tag.
 
-| Tag                        | Description                                                    |
-| -------------------------- | -------------------------------------------------------------- |
-| 01-setup-raytracing-master | Create the controller script which invokes the compute shader. |
-| 02-sample-from-texture     | Create rays and sample from Skybox texture.                    |
-| 03-trace-ground-and-sphere | Trace rays and intersect with ground plane and sphere.         |
+| Tag                        | Description                                                       |
+| -------------------------- | ----------------------------------------------------------------- |
+| 01-setup-raytracing-master | Create the controller script which invokes the compute shader.    |
+| 02-sample-from-texture     | Create rays and sample from Skybox texture.                       |
+| 03-trace-ground-and-sphere | Trace rays and intersect with ground plane and sphere.            |
+| 04-progressive-sampling    | Progressive sampling to remove aliasing when camera doesn't move. |
 
 ## 01-setup-raytracing-master
 
@@ -33,3 +34,9 @@ The output after creating rays and sampling from a Skybox texture:
 The output after adding a ground plane and sphere. Nasty aliasing!
 
 ![Sphere with Aliasing](./Documentation/Visualization/03-trace-ground-and-sphere.PNG "Sphere with Aliasing")
+
+## 04-progressive-sampling
+
+After progressive sampling, the sphere looks much better.
+
+![Sphere with Progressive Sampling](./Documentation/Visualization/04-progressive-sampling.PNG "Sphere without aliasing effects")

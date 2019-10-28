@@ -11,11 +11,25 @@ public class RayTracingMaster : MonoBehaviour
 
     private Camera _camera;
     private RenderTexture _target;
+    // Progressive sampling variables
+    private uint _currentSample = 0;
+    private Material _addMaterial;
 
     // Automatically called by Unity when the object is initialized
     private void Awake()
     {
         _camera = GetComponent<Camera>();
+    }
+
+    // Automatically called by Unity each frame
+    private void Update()
+    {
+        // Reset _currentSample count if camera has moved
+        if (transform.hasChanged)
+        {
+            _currentSample = 0;
+            transform.hasChanged = false;
+        }
     }
 
     // Automatically called by Unity when Camera finished rendering
@@ -37,6 +51,9 @@ public class RayTracingMaster : MonoBehaviour
 
         // Set ground plane location
         _shader.SetFloat("_GroundPlaneY", 0.0f);
+
+        // Pixel offset for progressive sampling
+        _shader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
     }
 
     private void Render(RenderTexture destination)
@@ -56,8 +73,15 @@ public class RayTracingMaster : MonoBehaviour
         // Dispatch the shader
         _shader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
 
-        // Blit the result texture to the screen
-        Graphics.Blit(_target, destination);
+        // Blit the result texture to the screen with progressive sampling
+        // by using our AddShader
+        if (_addMaterial == null)
+        {
+            _addMaterial = new Material(Shader.Find("Hidden/AddShader"));
+        }
+        _addMaterial.SetFloat("_Sample", _currentSample);
+        Graphics.Blit(_target, destination, _addMaterial);
+        _currentSample++;
     }
 
     // Initializes the render texture with the correct dimensions
@@ -65,7 +89,8 @@ public class RayTracingMaster : MonoBehaviour
     {
         if (_target == null || _target.height != Screen.height || _target.width != Screen.width)
         {
-            // We are either uninitialized or have mismatching dimensions
+            // Reset _currentSample count to restart progressive sampling
+            _currentSample = 0;
 
             // Release the current (mismatching) target if we have one
             if (_target != null)
