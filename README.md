@@ -10,14 +10,15 @@ David Kuri on the topic.
 
 Each stage of the project will be available as individual tag.
 
-| Tag                        | Description                                                       |
-| -------------------------- | ----------------------------------------------------------------- |
-| 01-setup-raytracing-master | Create the controller script which invokes the compute shader.    |
-| 02-sample-from-texture     | Create rays and sample from Skybox texture.                       |
-| 03-trace-ground-and-sphere | Trace rays and intersect with ground plane and sphere.            |
-| 04-progressive-sampling    | Progressive sampling to remove aliasing when camera doesn't move. |
-| 05-mirror-reflection       | Mirror-like reflection for metallic objects by bouncing rays.     |
-| 06-diffuse-reflection      | Add diffuse reflection for non-metallic objects.                  |
+| Tag                               | Description                                                       |
+| --------------------------------- | ----------------------------------------------------------------- |
+| 01-setup-raytracing-master        | Create the controller script which invokes the compute shader.    |
+| 02-sample-from-texture            | Create rays and sample from Skybox texture.                       |
+| 03-trace-ground-and-sphere        | Trace rays and intersect with ground plane and sphere.            |
+| 04-progressive-sampling           | Progressive sampling to remove aliasing when camera doesn't move. |
+| 05-mirror-reflection              | Mirror-like reflection for metallic objects by bouncing rays.     |
+| 06-diffuse-reflection             | Add diffuse reflection for non-metallic objects.                  |
+| 07-lambert-diffuse-phong-specular | Use Lambert Diffuse and Phong Specular via importance sampling.   |
 
 ## 01-setup-raytracing-master
 
@@ -55,3 +56,10 @@ reflections in relections in ...
 After adding additional diffuse reflections, everything is made of plastic.
 
 ![DiffuseReflection](./Documentation/Visualization/06-diffuse-reflection.PNG "Diffuse reflection")
+
+## 07-lambert-diffuse-phong-specular
+
+After adding Lambert Diffuse and Phong Specular reflections and combining them based on importance sampling, we
+start to look a lot nicer. We also added randomized spheres and a slider for global illumination.
+
+![LambertDiffusePhongSpecular](./Documentation/Visualization/07-lambert-diffuse-phong-specular.PNG "Lambert Diffuse and Phong Specular reflections")
