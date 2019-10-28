@@ -4,19 +4,21 @@
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 
-// The RenderTexture passed from RayTracingMaster in `Render(RenderTexture destination)`
+// The output RenderTexture
 RWTexture2D<float4> Result;
-// The parameters passed from RayTracingMaster in `SetShaderParameters()`
+// The parameters
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
-// The skybox texture passed from RayTracingMaster in `SetShaderParameters()`
+// The skybox texture
 Texture2D<float4> _SkyboxTexture;
-// The ground planes Y coordinate passed from RayTracingMaster in `SetShaderParameters()`
+// The ground planes Y coordinate
 float _GroundPlaneY;
-// Pixel offset for progressive sampling passed from RayTracingMaster in `SetShaderParameters()`
+// Pixel offset for progressive sampling
 float2 _PixelOffset;
 // The maximum number of reflections
 int _Reflections;
+// The directional light source with direction x, y, z and intensity w
+float4 _DirectionalLight;
 
 // Constants
 static const float PI = 3.14159265f;
@@ -143,15 +145,27 @@ float3 Shade(inout Ray ray, RayHit hit)
 {
     if (hit.distance < 1.#INF)
     {
-        float3 specular = float3(0.6f, 0.6f, 0.6f);
+        float3 specular = float3(0.04f, 0.04f, 0.04f);
+        float3 albedo = float3(0.8f, 0.8f, 0.8f);
 
         // Reflect the ray and multiply energy with specular reflection
-        ray.origin = hit.position + hit.normal * 0.001f;
+        float epsilon = 0.001f; // offset to prevent self-occlusion
+        ray.origin = hit.position + hit.normal * epsilon;
         ray.direction = reflect(ray.direction, hit.normal);
         ray.energy *= specular;
 
-        // Return nothing
-        return float3(0.0f, 0.0f, 0.0f);
+        // Shadow test ray
+        // If anything blocks the ray from our current hit to the light source we return black
+        bool shadow = false;
+        Ray shadowRay = CreateRay(hit.position + hit.normal * 0.001f, -1 * _DirectionalLight.xyz);
+        RayHit shadowHit = Trace(shadowRay);
+        if (shadowHit.distance != 1.#INF)
+        {
+            return float3(0.0f, 0.0f, 0.0f);
+        }
+
+        // Return a diffuse-shaded color
+        return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * albedo;
     }
     else
     {
@@ -159,7 +173,7 @@ float3 Shade(inout Ray ray, RayHit hit)
         ray.energy = 0.0f;
 
         int lod = 0;
-        float intensity = 1.4f;
+        float intensity = 1.1f;
         return intensity * _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, CarthesianToSpherical(ray.direction), lod);
     }
 }

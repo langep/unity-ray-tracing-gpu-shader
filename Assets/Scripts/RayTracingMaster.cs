@@ -6,7 +6,9 @@ public class RayTracingMaster : MonoBehaviour
 {
 
     [SerializeField] private ComputeShader _shader;
-    [SerializeField] private Texture _skybox_texture;
+    [SerializeField] private Texture _skyboxTexture;
+    [SerializeField] private Light _directionalLight;
+
     [Range(0, 9)] [SerializeField] private int _reflections;
 
 
@@ -31,6 +33,12 @@ public class RayTracingMaster : MonoBehaviour
             _currentSample = 0;
             transform.hasChanged = false;
         }
+
+        if (_directionalLight.transform.hasChanged)
+        {
+            _currentSample = 0;
+            _directionalLight.transform.hasChanged = false;
+        }
     }
 
     private void OnValidate()
@@ -51,18 +59,17 @@ public class RayTracingMaster : MonoBehaviour
         // Camera parameters
         _shader.SetMatrix("_CameraToWorld", _camera.cameraToWorldMatrix);
         _shader.SetMatrix("_CameraInverseProjection", _camera.projectionMatrix.inverse);
-
         // Skybox texture
-        _shader.SetTexture(0, "_SkyboxTexture", _skybox_texture);
-
+        _shader.SetTexture(0, "_SkyboxTexture", _skyboxTexture);
         // Set ground plane location
         _shader.SetFloat("_GroundPlaneY", 0.0f);
-
         // Pixel offset for progressive sampling
         _shader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
-
         // Number of reflections
         _shader.SetInt("_Reflections", _reflections);
+        // Directional Light information for diffuse reflections
+        Vector3 l = _directionalLight.transform.forward;
+        _shader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, _directionalLight.intensity));
     }
 
     private void Render(RenderTexture destination)
